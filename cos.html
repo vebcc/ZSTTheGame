@@ -1,0 +1,26 @@
+<html>
+<head>
+<script src="https://togetherjs.com/togetherjs-min.js"></script>
+<meta charset="UTF-8">
+<title>Baza danych sklep komputerowy</title>
+</head>
+
+<body>
+<script>
+
+function dodaj(){
+var x=document.getElementById('pierwszy').value;
+var y=document.getElementById('drugi').value;
+var z=x+y;
+document.getElementById("wynik").innerHTML=z;
+}
+</script>
+<input type="number" value="0" id="pierwszy"/>
+<input type="number" value="0" id="drugi"/>
+<button onclick="dodaj()">test</button>
+<div id="wynik"></div>
+<button onclick="TogetherJS(this); return false;">Start TogetherJS</button>
+</body>
+</html>
+
+
