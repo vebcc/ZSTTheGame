@@ -27,32 +27,39 @@ const dialfont = "15px Comic Sans MS"; // wielkosc oraz czcionka dialogow
 const dialcol = "white"; // kolor kwadratu pod dialogiem
 const dialtcol = "black"; // kolor tekst'u dialogu
 
-const dialpx = 8 //pixele na literke (do wyswietlania kwadratu pod dialogiem)
+const dialxyfont = "9px Comic Sans MS";
+
+const dialpx = 8; //pixele na literke (do wyswietlania kwadratu pod dialogiem)
+
+const dxy = 1; // czy pozycja xy postaci/przedmiotow ma sie wyswietlac
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // tablica przechowywuje nazwy zdjec do wczytania
+// grafiki musza byc ustawione w takiej kolejnosci w jakiej sa deklarowane obiekty
 const imgNames = [
+    //grafika ciala
     'steve.png',
     'creeper.png',
-
+    //grafika twarzy
     'jacek.jpg',
     'kuba.jpg',
     'maslo.jpg',
     'samuel.jpg',
     'jacek.jpg',
-
+    // grafika lvl'a
     'menu.png',
     'kornel.png',
     'kornel.png',
     'kornel.png',
     'kornel.png',
-
+    //grafika przedmiotow
     'szafa.png'
 ];
 
 //NOTE Jacek musi zrobic jakas ladna mapke kornela
 //NOTE Trzeba zrobic jakies scenariusze!
+
 // tablica przechowywujaca nazwy cial postaci (body)
 // nazwa ciala (body) // x, y wielkosc ciala // przesuniecie ciala od lewej
 const body = [["steve", 50, 50, 0],
@@ -577,6 +584,39 @@ function drawtext(){
 }
 
 //////////////////////////////
+/// Wyswietlanie polozenia //
+/////////////////////////////
+
+function drawxy(type, id){
+    if(dxy==1){ // czy pozycja ma sie wyswietlac
+        ctx.font = dialxyfont;
+        ctx.textAlign = "center";
+        ctx.fillStyle = dialcol;
+        let bgdialx = 22; // szerokosc tla pod tekstem pozycji xy
+
+        if(type==0){ // czy tekst wyswietla sie nad glowna postacia czy pobocznymi
+            ctx.fillRect(chx*ma-bgdialx+26, chy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillStyle = dialtcol;
+            ctx.fillText("x: " + chx + " y: " + chy, chx*ma+26, chy*ma+23);  // wyswietlanie tekstu dialogu
+        }else if(type==1){
+            let obcx = mapchamp[id][1]; // pobiera x postaci
+            let obcy = mapchamp[id][2]; // pobiera y postaci
+
+            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillStyle = dialtcol;
+            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu dialogu
+        }else{
+            let obcx = mapobj[id][1]; // pobiera x postaci
+            let obcy = mapobj[i][2]; // pobiera y postaci
+
+            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillStyle = dialtcol;
+            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu dialogu
+        }
+    }
+}
+
+//////////////////////////////
 /// Wyswietlanie postaci /////
 /////////////////////////////
 
@@ -584,6 +624,7 @@ function drawcharacters(){
     for(i=0;i<mapchamp.length;i++){
         pp[mapchamp[i][0]].draw(mapchamp[i][1],mapchamp[i][2]);
         pchamp[mapchamp[i][0]] = i;
+        drawxy(1, i);
     }
 }
 
@@ -594,7 +635,7 @@ function drawcharacters(){
 function drawobjects(){
     for(i=0;i<mapobj.length;i++){
         ctx.drawImage(ob[mapobj[i][0]][0], mapobj[i][1]*ma, (mapobj[i][2]*ma)-ob[mapobj[i][0]][3], ob[mapobj[i][0]][1],ob[mapobj[i][0]][2]);
-
+        drawxy(2, i);
     }
 }
 
@@ -680,6 +721,7 @@ function loop(){
     drawcharacters(); // wyswietla postacie
     drawobjects(); // wyswietlanie przedmiotow
     lvl["l"+alvl].champ.draw(chx, chy); // wyswietla glowna postac
+    drawxy(0);
     drawtext(); // wyswietlanie tekstu - dialogow
     przebieggry(); // sprawdzanie przebiegu scenariusza
 }
