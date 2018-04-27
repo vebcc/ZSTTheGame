@@ -27,11 +27,14 @@ const dialfont = "15px Comic Sans MS"; // wielkosc oraz czcionka dialogow
 const dialcol = "white"; // kolor kwadratu pod dialogiem
 const dialtcol = "black"; // kolor tekst'u dialogu
 
-const dialxyfont = "9px Comic Sans MS";
+const dialxyfont = "9px Comic Sans MS"; // wielkosc oraz czczionka kordow postaci (dxy)
 
 const dialpx = 8; //pixele na literke (do wyswietlania kwadratu pod dialogiem)
 
 const dxy = 1; // czy pozycja xy postaci/przedmiotow ma sie wyswietlac
+
+//NOTE: Przemyslec z Jackiem czy nie nalezy przeprowadzic generalnej przebudowy bo jest juz dosc duze zamieszanie z powodu generowania textur np na nowo ogarnac pobieranie textur i ograniczyc tylko do pelnych plikow
+//NOTE: Jednoczesnie stworzyc nowe konstruktory postaci (bedzie wymagane przy przebudowie)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,11 +57,14 @@ const imgNames = [
     'kornel.png',
     'kornel.png',
     //grafika przedmiotow
-    'szafa.png'
+    'szafa.png',
+    //grafiki calych textur
+    'texture1.jpg',
+    'texture2.png'
 ];
 
-//NOTE Jacek musi zrobic jakas ladna mapke kornela
-//NOTE Trzeba zrobic jakies scenariusze!
+//TODO: Stworzyc przykladowa mape np sali cornela
+//TODO: Wymyslic scenariusz i przykladowy lvl caly od poczatku do konca i zajac sie implementacja funkcji potrzebnych do jego realizacji.
 
 // tablica przechowywujaca nazwy cial postaci (body)
 // nazwa ciala (body) // x, y wielkosc ciala // przesuniecie ciala od lewej
@@ -76,13 +82,24 @@ const persons =[["Jacek" , "steve", 30, 30, 10, -17],
 // tablica przechowywujaca levele
 // nr lvl // tytul lvl'a // glowny bohater // x, y defaultowy postaci(2) // w, n, e, s granice mapy
 const level = [[0, "Menu", "Jacek", 6, 5, 1, 2, 1, 2],
-               [1, "Szkolni palacze", "Dyrektor", 6, 6, 4, 3, 1, 3],
+               [1, "Szkolni palacze", "Dyrektor", 6, 10, 4, 3, 1, 3],
                [2, "Jedynkowy challenge", "Kornel",2,2, 0, 0, 0, 0],
                [3, "Dziecko choc do tablicy", "Lampert",2,2, 0, 0, 0, 0],
                [4, "Usprawiedliwiam godziny", "Olek",2,2, 0, 0, 0, 0]];
 
 // nazwa // x,y wielkosc przedmiotu // przesuniecie od dolu
 const obiekty = [["szafa", 50, 80, 25]]; // przechowywuje nazwy i wymiary zdjec przedmiotow
+
+// nazwa // x,y kartki na blok
+const textures = [["texture1", 32, 32],
+                  ["texture2", 48, 48]]; // przechowywuje nazwy i wymiary zdjec przedmiotow
+
+// przechowywuje kody obiektow do odwolywania sie do textur
+//kod //x,y kratki w texturce
+const texblock = [["ta", 8,0], // stol
+                  ["ch", 8,1]]; //krzeslo
+
+//TODO: Stworzyc deklaracje tablice  by mozna bylo przypisywac nowy typ textur
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,7 +110,8 @@ const dmapchamp = [[], // lvl )
                 [["Kornel", 18,3], // LVL 1
                  ["Jacek", 7, 6],
                  ["Lampert", 13, 6],
-                 ["Olek", 15, 7]],
+                 ["Olek", 15, 7],
+                 ["Dyrektor", 14, 9]],
 
                 [["Dyrektor", 12, 12], // LVL 2/
                  ["Lampert", 4, 3]]];
@@ -110,11 +128,11 @@ const dmapobj = [[],
 // dialogi moga sie wyswietlac tylko nad postaciami glownymi i pobocznymi
 // na zdarzenia moga reagowac takze obiekty (przedmioty)
 
-// FUTURE: stworzyc funkcje ktora animuje powolne przejscie obiektow
 // TODO: stworzyc pare akcji wiecej by lepiej pokazac logike
 const scenariusz =[[],
                    [["Dyrektor", "Przynieślismy panu szafę!", 2000, "szafa", 6, 5, "Kornel", "N", 9],
                     ["Kornel", "Co jaka szafę?!", 2000, "Kornel", 18, 8, "Kornel", 11, "N"],
+                    ["Jacek", "Przynieślismy panu szafę!", 2000, "szafa", 15, 5, "Kornel", "N", 9],
                     ["Lampert", "Fajnie jest 3", 2000, "Dyrektor", 15, 9, "Dyrektor", "N", "N"]]];
 
 // tablica przechowywujaca zdarzenia [lvl][y][x]
@@ -138,15 +156,15 @@ const zdarzenia =[[[0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 
                   [[0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ], // LVL 1 sala Kornel'a
                    [0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
                    [0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , "ta", "ta", 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , "ta", 0   , "ta", 0   , "ta", 0   , "ta", 0   , "ta", 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , "ta", 0   , "ta", 0   , "ta", 0   , "ta", 0   , "ta", 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , "ta", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , 0   , 0   , 0   , "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", 0   , 0   , 0   ],
-                   [0   , 0   , 0   , 0   , 0   , 0   ,"l00", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ch", 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ta", "ta", 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", 0   , "ch", "ta", "ch", "ta", "ch", "ta", "ch", "ta", "ch", "ta", 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", 0   , "ch", "ta", "ch", "ta", "ch", "ta", "ch", "ta", "ch", "ta", 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , "ta", "ch", 0   , "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", "ch", 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , 0   , 0   ,"l00", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", "ta", 0   , 0   , 0   ],
+                   [0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
                    [0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ],
                    [0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0   ]],
 
@@ -190,6 +208,8 @@ var bd = new Array; // tablica przechowywujaca zdjecia body
 var pp = new Array; // tablica przechowywujaca obiekty postaci
 
 var lvl = new Array; // tablica przechowywujaca obiekty lvl'i
+
+var texture = new Array; // tablica przechowywujaca obiekty textur
 
 var pchamp = new Array; // tablica przechowywuajca kolejno nazwy postaci na aktualnym lvl'u wzgledem mapchamp
 
@@ -326,13 +346,15 @@ function drawwhereaction(){
 //// Wykrywanie buttonow ////
 /////////////////////////////
 
+// Wymyslic i dodac sposob automatycznego pobierania i sprawdzania zdarzen blokujacych ruch z tablicy zdarzen np "ta"
+
 document.addEventListener('keydown', function(event) {
     if(krok==0){
         let zd;
         switch(event.keyCode){
             case 37: //Left
                     zd = zdarzenia[alvl][chy][chx-1];
-                    if(zd==0){ // Kiedy brak zdarzenia tablicowego
+                    if(zd==0 || zd=="ch"){ // Kiedy brak zdarzenia tablicowego
                         if(chx>lvl["l"+alvl].max[0]){ // zdarzenie wyjscia za mape
                             if(pitem(-ps,0)){ //przesuwane przedmiotu i sprawdzanie czy przedmiot moze sie poruszyc w danym kierunku
                                 perkrok(-ps,0);
@@ -347,7 +369,7 @@ document.addEventListener('keydown', function(event) {
                 break;
             case 38: //Up
                     zd = zdarzenia[alvl][chy-1][chx];
-                    if(zd==0){ // Kiedy brak zdarzenia tablicowego
+                    if(zd==0 || zd=="ch"){ // Kiedy brak zdarzenia tablicowego
                         if(chy>lvl["l"+alvl].max[1]){ // zdarzenie wyjscia za mape
                             if(pitem(0,-ps)){ //przesuwane przedmiotu i sprawdzanie czy przedmiot moze sie poruszyc w danym kierunku
                                 perkrok(0,-ps);
@@ -362,7 +384,7 @@ document.addEventListener('keydown', function(event) {
                 break;
             case 39: //Right
                     zd = zdarzenia[alvl][chy][chx+1];
-                    if(zd==0){ // Kiedy brak zdarzenia tablicowego
+                    if(zd==0 || zd=="ch"){ // Kiedy brak zdarzenia tablicowego
                         if(chx+1<cw/ma-(lvl["l"+alvl].max[2])){ // zdarzenie wyjscia za mape
                             if(pitem(ps,0)){ //przesuwane przedmiotu i sprawdzanie czy przedmiot moze sie poruszyc w danym kierunku
                                 perkrok(ps,0);
@@ -377,7 +399,7 @@ document.addEventListener('keydown', function(event) {
                 break;
             case 40: //Down
                     zd = zdarzenia[alvl][chy+1][chx];
-                    if(zd==0){ // Kiedy brak zdarzenia tablicowego
+                    if(zd==0 || zd=="ch"){ // Kiedy brak zdarzenia tablicowego
                         if(chy+1<ch/ma-(lvl["l"+alvl].max[3])){ // zdarzenie wyjscia za mape
                             if(pitem(0,ps)){ //przesuwane przedmiotu i sprawdzanie czy przedmiot moze sie poruszyc w danym kierunku
                                 perkrok(0,ps);
@@ -397,6 +419,8 @@ document.addEventListener('keydown', function(event) {
 //////////////////////////////
 /// Ruch gracza / Animcja ///
 /////////////////////////////
+
+//TODO: Animacja glownej postaci
 
 function perkrok(x, y){
     krok=1;
@@ -420,6 +444,8 @@ function perkrok(x, y){
 // Ruch pobocznej postaci ///
 /////////////////////////////
 
+//TODO: Animacja postaci pobocznych
+//FUTURE: Lub wymyslic nowy konstruktor i przypisywanie glownych i pobocznych postaci i implementowac funkcje draw w klase postaci i reczna funkcje dzieki czemu bedzie mozna zrobic 1 animacje dla wszystkich postaci i glownej i pobocznej.
 function charkrok(x, y){
     let tpx = x/pk;
     let tpy = y/pk;
@@ -595,23 +621,23 @@ function drawxy(type, id){
         let bgdialx = 22; // szerokosc tla pod tekstem pozycji xy
 
         if(type==0){ // czy tekst wyswietla sie nad glowna postacia czy pobocznymi
-            ctx.fillRect(chx*ma-bgdialx+26, chy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillRect(chx*ma-bgdialx+26, chy*ma+15, bgdialx*2, 10); // wyswietlanie tla pozycji
             ctx.fillStyle = dialtcol;
-            ctx.fillText("x: " + chx + " y: " + chy, chx*ma+26, chy*ma+23);  // wyswietlanie tekstu dialogu
+            ctx.fillText("x: " + chx + " y: " + chy, chx*ma+26, chy*ma+23);  // wyswietlanie tekstu pozycji
         }else if(type==1){
             let obcx = mapchamp[id][1]; // pobiera x postaci
             let obcy = mapchamp[id][2]; // pobiera y postaci
 
-            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla pozycji
             ctx.fillStyle = dialtcol;
-            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu dialogu
+            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu pozycji
         }else{
             let obcx = mapobj[id][1]; // pobiera x postaci
             let obcy = mapobj[i][2]; // pobiera y postaci
 
-            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla dialogu
+            ctx.fillRect(obcx*ma-bgdialx+26, obcy*ma+15, bgdialx*2, 10); // wyswietlanie tla pozycji
             ctx.fillStyle = dialtcol;
-            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu dialogu
+            ctx.fillText("x: " + obcx + " y: " + obcy, obcx*ma+26, obcy*ma+23);  // wyswietlanie tekstu pozycji
         }
     }
 }
@@ -622,7 +648,9 @@ function drawxy(type, id){
 
 function drawcharacters(){
     for(i=0;i<mapchamp.length;i++){
-        pp[mapchamp[i][0]].draw(mapchamp[i][1],mapchamp[i][2]);
+        //pp[mapchamp[i][0]].draw(mapchamp[i][1],mapchamp[i][2]); // drukowanie postaci OLD
+        //TODO: Stworzyc funkcje zarzadzajaca texturami postaci ktora przypisuje konkretne textury
+        drawtx(1,9,4,mapchamp[i][1],mapchamp[i][2]); // drukowanie postaci NEW
         pchamp[mapchamp[i][0]] = i;
         drawxy(1, i);
     }
@@ -637,6 +665,40 @@ function drawobjects(){
         ctx.drawImage(ob[mapobj[i][0]][0], mapobj[i][1]*ma, (mapobj[i][2]*ma)-ob[mapobj[i][0]][3], ob[mapobj[i][0]][1],ob[mapobj[i][0]][2]);
         drawxy(2, i);
     }
+}
+
+//////////////////////////////
+// Wyswietlanie przedmiotow //
+/////////////////////////////
+
+function drawtx(tex,xt,yt,x,y){
+    ctx.drawImage(texture[tex][0], texture[tex][1]*xt, texture[tex][2]*yt, texture[tex][1], texture[tex][2], ma*x, ma*y, ma, ma);
+}
+
+//////////////////////////////
+// Drukowanie przedmiotow ///
+/////////////////////////////
+
+//FUTURE: Wszystkie funkcje drukujace dzialajace tylko w obrebie w ktorym dzieje sie akcja czyli renderowanie tylko tam gdzie trzeba nie calosci
+
+function drawtexture(){
+    for(var i=0; i<zdarzenia[alvl].length; i++){
+        for(var v=0; v<zdarzenia[alvl][i].length; v++){
+            for(var z=0;z<texblock.length;z++){
+                if(texblock[z][0]==zdarzenia[alvl][i][v]){
+                    drawtx(0,texblock[z][1],texblock[z][2],v,i);
+                }
+            }
+        }
+    }
+}
+
+//////////////////////////////
+//// Drukowanie postaci /////
+/////////////////////////////
+//NOTE: nic nie robi narazie xD funkcja drukowania postaci;
+function drawhero(){
+    drawtx(0,texblock[z][1],texblock[z][2],v,i);
 }
 
 //////////////////////////////
@@ -705,6 +767,12 @@ function main(){
         ob[obiekty[i][0]] = [images[i+nextw], obiekty[i][1], obiekty[i][2], obiekty[i][3]];
         nextop++;
     }
+    nextw = nextop;
+    // petla generujaca obiekty textur
+    for(i=0;i<textures.length;i++){
+        texture[i] = [images[i+nextw], textures[i][1], textures[i][2]];
+        nextop++;
+    }
 
     setlvl(deflvl);
 
@@ -717,13 +785,17 @@ function main(){
 
 function loop(){
     lvl["l"+alvl].drawbg(); // wyswietla mape
+    drawtexture();
     drawwhereaction() // zaznacza kratke gdzie oczekuje na akcje
     drawcharacters(); // wyswietla postacie
     drawobjects(); // wyswietlanie przedmiotow
-    lvl["l"+alvl].champ.draw(chx, chy); // wyswietla glowna postac
+    //lvl["l"+alvl].champ.draw(chx, chy); // wyswietla glowna postac
+    drawtx(1,0,0,chx,chy); //drukowanie glownej postaci z textur
     drawxy(0);
     drawtext(); // wyswietlanie tekstu - dialogow
     przebieggry(); // sprawdzanie przebiegu scenariusza
+
+
 }
 
 loading(); // wywolanie funkcji ladowania obrazkow
